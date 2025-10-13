@@ -1,11 +1,12 @@
-package models;
+package com.nastya_2210.aston.userservice_sping.models;
 
 import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
-public class User{
+public class User {
 @Id
 @GeneratedValue(strategy = GenerationType.IDENTITY)
 private int id;
@@ -71,7 +72,11 @@ public LocalDateTime getCreatedAt() {
     return createdAt;
 }
 
-@Override
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    @Override
 public String toString() {
     return "User{" +
             "id=" + id +
