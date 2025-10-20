@@ -1,21 +1,26 @@
 package com.nastya_2210.aston.userservice_sping.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 
 public class UserRequestDTO {
 
+
     @NotBlank
+    @Schema(description = "Имя пользователя", example = "Иван")
     private String name;
 
     @Min(1)
+    @Schema(description = "Возраст пользователя", example = "20")
     private int age;
 
     @Email
+    @Schema(description = "Email пользователя", example = "test@gmail.com")
     private String email;
 
-    public UserRequestDTO() {}  // пустой (обязательно для Spring)
+    public UserRequestDTO() {}
 
     public UserRequestDTO(String name, int age, String email) {
         this.name = name;
