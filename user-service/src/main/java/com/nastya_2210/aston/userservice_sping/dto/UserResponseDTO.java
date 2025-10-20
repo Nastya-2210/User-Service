@@ -1,21 +1,13 @@
 package com.nastya_2210.aston.userservice_sping.dto;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-
 import java.time.LocalDateTime;
 
 public class UserResponseDTO {
 
-    @Schema(description = "ID пользователя", example = "1")
     private Integer id;
-
-    @Schema(description = "Имя пользователя", example = "Иван")
     private String name;
-    @Schema(description = "Возраст пользователя", example = "20")
     private int age;
-    @Schema(description = "Email пользователя", example = "test@gmail.com")
     private String email;
-    @Schema(description = "Время создания пользователя", example = "2025-07-12T15:30:00")
     private LocalDateTime createdAt;
 
 

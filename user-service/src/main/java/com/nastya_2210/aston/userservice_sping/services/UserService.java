@@ -55,23 +55,19 @@ public class UserService {
         return toResponseDTO(user);
     }
 
-    public UserResponseDTO saveUser(UserRequestDTO userRequestDTO) {
+    public void saveUser(UserRequestDTO userRequestDTO) {
         if (userRequestDTO == null) {
             throw new IllegalArgumentException("User cannot be null");
         }
-
         // Преобразовываем DTO в Entity
         User user = toEntity(userRequestDTO);
 
         // Сохраняем Entity
-        User savedUser = userRepository.save(user);
+        userRepository.save(user);
 
-        // Отправляем событие
-        UserEventDTO event = new UserEventDTO(savedUser.getEmail(), "USER_CREATED");
+        UserEventDTO event = new UserEventDTO(user.getEmail(),"USER_CREATED");
+
         kafkaTemplate.send("user-events", event);
-
-        // Возвращаем DTO
-        return toResponseDTO(savedUser);
     }
 
     public void deleteUser(int id) {
