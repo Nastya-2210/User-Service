@@ -7,6 +7,8 @@ import com.nastya_2210.aston.userservice_sping.dto.UserResponseDTO;
 import com.nastya_2210.aston.userservice_sping.models.User;
 import com.nastya_2210.aston.userservice_sping.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.client.circuitbreaker.CircuitBreaker;
+import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
@@ -16,13 +18,16 @@ import java.util.stream.Collectors;
 @Service
 public class UserService {
     private final UserRepository userRepository;
-
     private final KafkaTemplate<String, UserEventDTO> kafkaTemplate;
+    private final CircuitBreakerFactory circuitBreakerFactory;
 
    @Autowired
-    public UserService(UserRepository userRepository, KafkaTemplate<String, UserEventDTO> kafkaTemplate) {
-        this.userRepository = userRepository;
+   public UserService(UserRepository userRepository,
+                      KafkaTemplate<String, UserEventDTO> kafkaTemplate,
+                      CircuitBreakerFactory circuitBreakerFactory) {
+       this.userRepository = userRepository;
        this.kafkaTemplate = kafkaTemplate;
+       this.circuitBreakerFactory = circuitBreakerFactory;
    }
 
     // User → UserResponseDTO
@@ -66,10 +71,17 @@ public class UserService {
         // Сохраняем Entity
         User savedUser = userRepository.save(user);
 
-        // Отправляем событие
-        UserEventDTO event = new UserEventDTO(savedUser.getEmail(), "USER_CREATED");
-        kafkaTemplate.send("user-events", event);
+        CircuitBreaker circuitBreaker = circuitBreakerFactory.create("kafkaProducer");
 
+        circuitBreaker.run(() -> {
+            UserEventDTO event = new UserEventDTO(savedUser.getEmail(), "USER_CREATED");
+            kafkaTemplate.send("user-events", event);
+            return "Success";
+        }, throwable -> {
+            System.out.println("Kafka is unavailable. Event will be processed later: " +
+                    savedUser.getEmail() + " - USER_CREATED");
+            return "Fallback: Event stored for later processing";
+        });
         // Возвращаем DTO
         return toResponseDTO(savedUser);
     }
@@ -81,9 +93,17 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User with ID " + id + " not found"));
         userRepository.delete(user);
+        CircuitBreaker circuitBreaker = circuitBreakerFactory.create("kafkaProducer");
 
-        UserEventDTO event = new UserEventDTO(user.getEmail(), "USER_DELETED");
-        kafkaTemplate.send("user-events", event);
+        circuitBreaker.run(() -> {
+            UserEventDTO event = new UserEventDTO(user.getEmail(), "USER_DELETED");
+            kafkaTemplate.send("user-events", event);
+            return "Success";
+        }, throwable -> {
+            System.out.println("Kafka is unavailable. Event will be processed later: " +
+                    user.getEmail() + " - USER_DELETED");
+            return "Fallback: Event stored for later processing";
+        });
     }
 
     public void updateUser(int id, UserRequestDTO userRequestDTO) {
